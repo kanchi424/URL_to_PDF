@@ -8,6 +8,7 @@ import os
 import uuid
 import asyncio
 from PyPDF2 import PdfMerger
+import json
 
 from fastapi.staticfiles import StaticFiles
 
@@ -27,7 +28,22 @@ app.mount("/generated_pdfs", StaticFiles(directory="generated_pdfs"), name="pdfs
 class CrawlRequest(BaseModel):
     url: str
 
-jobs = {}
+JOBS_FILE = "jobs.json"
+
+def load_jobs():
+    if os.path.exists(JOBS_FILE):
+        try:
+            with open(JOBS_FILE, "r") as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
+
+def save_jobs_to_disk():
+    with open(JOBS_FILE, "w") as f:
+        json.dump(jobs, f)
+
+jobs = load_jobs()
 
 @app.post("/api/crawl")
 async def start_crawl(request: CrawlRequest, background_tasks: BackgroundTasks):
@@ -40,6 +56,7 @@ async def start_crawl(request: CrawlRequest, background_tasks: BackgroundTasks):
     }
     
     background_tasks.add_task(process_site, job_id, request.url)
+    save_jobs_to_disk()
     return {"job_id": job_id}
 
 @app.get("/api/status/{job_id}")
@@ -55,6 +72,7 @@ async def process_site(job_id: str, url: str):
         pages = await crawler.crawl()
         jobs[job_id]["pages"] = pages
         jobs[job_id]["total_pages"] = len(pages)
+        save_jobs_to_disk()
         
         # 2. Generate PDFs
         pdf_engine = PdfEngine(output_dir=f"generated_pdfs/{job_id}")
@@ -64,6 +82,7 @@ async def process_site(job_id: str, url: str):
             await pdf_engine.generate_pdf(page["url"], filename)
             jobs[job_id]["pdfs_generated"] += 1
             page["pdf_path"] = f"generated_pdfs/{job_id}/{filename}"
+            save_jobs_to_disk()
         
         # 3. Merge PDFs
         print(f"Starting merge for job {job_id}...")
@@ -96,16 +115,20 @@ async def process_site(job_id: str, url: str):
             # but we should at least log it.
 
         
+        jobs[job_id]["merged_pdf_path"] = merged_pdf_path
+        
         # 4. Zip
         shutil.make_archive(f"generated_pdfs/{job_id}_all", 'zip', f"generated_pdfs/{job_id}")
         jobs[job_id]["zip_path"] = f"generated_pdfs/{job_id}_all.zip"
         
         jobs[job_id]["status"] = "completed"
+        save_jobs_to_disk()
         
     except Exception as e:
         print(f"Job failed: {e}")
         jobs[job_id]["status"] = "failed"
         jobs[job_id]["error"] = str(e)
+        save_jobs_to_disk()
 
 if __name__ == "__main__":
     import uvicorn
