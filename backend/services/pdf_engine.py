@@ -9,7 +9,7 @@ class PdfEngine:
 
     async def generate_pdf(self, url: str, filename: str) -> str:
         async with async_playwright() as p:
-            browser = await p.chromium.launch()
+            browser = await p.chromium.launch(args=["--no-sandbox", "--disable-setuid-sandbox"])
             # specific viewport for consistent desktop rendering
             page = await browser.new_page(viewport={"width": 1280, "height": 720}) 
             

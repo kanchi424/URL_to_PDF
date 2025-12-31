@@ -52,14 +52,17 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 selection:bg-cyan-500/30">
-      <div className="container mx-auto px-40 py-16 flex flex-col items-center justify-center min-h-screen relative z-10">
+      <div className="container mx-auto px-40 py-16 flex flex-col items-center justify-center min-h-screen relative z-10 text-center">
 
-        <header className="mt-32 mb-12 w-full flex flex-col items-center justify-center">
-          <div className="font-bold text-6xl tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-green-100 to-red-200 select-none drop-shadow-2xl text-center">
+        <div className="mb-16">
+          <h1 className="font-bold text-8xl md:text-9xl tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-green-100 to-red-200 select-none drop-shadow-2xl mb-4">
             URL TO PDF GENERATOR
-          </div>
-          <p className="text-slate-400 mt-2 text-xs italic tracking-wider">Enter a URL to convert the pages in the Website to PDF.</p>
-        </header>
+          </h1>
+          <p className="text-slate-400 text-lg italic tracking-wider">
+            Enter a URL to convert the pages in the Website to PDF.
+          </p>
+        </div>
+
 
         <AnimatePresence mode="wait">
           {!jobId ? (
