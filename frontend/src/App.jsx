@@ -25,7 +25,8 @@ function App() {
     } catch (error) {
       console.error("Error starting crawl:", error);
       setIsLoading(false);
-      alert("Failed to start crawl. Please check if the backend is running.");
+      const detail = error.response?.data?.detail || error.message;
+      alert(`Failed to start crawl: ${detail}. Please check if the backend is running and the URL is valid.`);
     }
   };
 
