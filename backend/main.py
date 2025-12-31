@@ -66,15 +66,32 @@ async def process_site(job_id: str, url: str):
             page["pdf_path"] = f"generated_pdfs/{job_id}/{filename}"
         
         # 3. Merge PDFs
-        merger = PdfMerger()
-        for i in range(len(pages)):
-            pdf_path = f"generated_pdfs/{job_id}/page_{i}.pdf"
-            merger.append(pdf_path)
-        
-        merged_pdf_path = f"generated_pdfs/{job_id}/merged.pdf"
-        merger.write(merged_pdf_path)
-        merger.close()
-        jobs[job_id]["merged_pdf_path"] = merged_pdf_path
+        print(f"Starting merge for job {job_id}...")
+        try:
+            merger = PdfMerger(strict=False)
+            files_merged = 0
+            for i in range(len(pages)):
+                pdf_path = f"generated_pdfs/{job_id}/page_{i}.pdf"
+                if os.path.exists(pdf_path):
+                    print(f"Appending {pdf_path} to merger")
+                    merger.append(pdf_path)
+                    files_merged += 1
+                else:
+                    print(f"Warning: File not found for merging: {pdf_path}")
+            
+            if files_merged > 0:
+                merged_pdf_path = f"generated_pdfs/{job_id}/merged.pdf"
+                merger.write(merged_pdf_path)
+                merger.close()
+                jobs[job_id]["merged_pdf_path"] = merged_pdf_path
+                print(f"Successfully created merged PDF at {merged_pdf_path}")
+            else:
+                print(f"No files were available to merge for job {job_id}")
+        except Exception as merge_err:
+            print(f"Merge failed specifically: {merge_err}")
+            # We don't want to fail the whole job just because merge failed, 
+            # but we should at least log it.
+
         
         # 4. Zip
         shutil.make_archive(f"generated_pdfs/{job_id}_all", 'zip', f"generated_pdfs/{job_id}")
